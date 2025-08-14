@@ -1,3 +1,4 @@
+
 let web3;
 let contract;
 let userAccount;
@@ -182,9 +183,69 @@ let leaderboardContract;
 // RPC URL'sindeki boşluk karakterlerini temizledim
 const PHAROS_RPC_URL = "https://api.zan.top/node/v1/pharos/testnet/b89512a57f014c6ca7f8d791bc8f8471";
 
+// --- METAMASK AĞ YAPILANDIRMA ---
+const PHAROS_TESTNET_CONFIG = {
+    chainId: '0x' + (9747).toString(16), // Hex formatında chain ID (örnek: 9747)
+    chainName: 'Pharos Testnet',
+    nativeCurrency: {
+        name: 'PHAR',
+        symbol: 'PHAR',
+        decimals: 18
+    },
+    rpcUrls: ['https://api.zan.top/node/v1/pharos/testnet/b89512a57f014c6ca7f8d791bc8f8471'],
+    blockExplorerUrls: ['https://pharos-testnet.explorer.zan.top/'],
+    iconUrls: [] // Opsiyonel
+};
+
+async function switchOrAddPharosNetwork() {
+    if (!window.ethereum) {
+        alert("MetaMask yüklü değil!");
+        return false;
+    }
+
+    const chainIdHex = PHAROS_TESTNET_CONFIG.chainId;
+
+    try {
+        // Önce ağa geçmeye çalış
+        await window.ethereum.request({
+            method: 'wallet_switchEthereumChain',
+            params: [{ chainId: chainIdHex }]
+        });
+        console.log("Zaten Pharos Testnet ağına bağlı.");
+        return true;
+    } catch (switchError) {
+        // Ağ yoksa ekle
+        if (switchError.code === 4902) {
+            try {
+                await window.ethereum.request({
+                    method: 'wallet_addEthereumChain',
+                    params: [PHAROS_TESTNET_CONFIG]
+                });
+                console.log("Pharos Testnet ağı başarıyla eklendi.");
+                return true;
+            } catch (addError) {
+                console.error("Ağ eklenirken hata oluştu:", addError);
+                alert("Ağ eklenemedi. Lütfen manuel olarak ekleyin.");
+                return false;
+            }
+        } else {
+            console.error("Ağ değiştirilemedi:", switchError);
+            alert("Ağ değiştirilemedi. Lütfen manuel olarak değiştirin.");
+            return false;
+        }
+    }
+}
+// --- METAMASK AĞ YAPILANDIRMA SON ---
+
 async function connectToWeb3Interactive() {
     try {
         if (window.ethereum) {
+            // Ağ kontrolü ve gerekirse ekleme/değiştirme
+            const networkAdded = await switchOrAddPharosNetwork();
+            if (!networkAdded) {
+                return { success: false, error: 'Ağ yapılandırması başarısız oldu.' };
+            }
+
             web3 = new Web3(window.ethereum);
             const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
             if (!accounts || accounts.length === 0) {
@@ -372,6 +433,7 @@ window.submitScoreToBlockchain = submitScoreToBlockchain;
 window.getLeaderboardFromBlockchain = getLeaderboardFromBlockchain;
 // --- YENI SON ---
 window.initReadOnlyWeb3 = initReadOnlyWeb3;
+window.switchOrAddPharosNetwork = switchOrAddPharosNetwork;
 
 // Sayfa yüklendiğinde readonly başlat
 window.addEventListener('load', initReadOnlyWeb3);
