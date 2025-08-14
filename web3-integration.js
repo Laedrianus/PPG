@@ -272,8 +272,8 @@ async function getLeaderboardFromBlockchain(limit = 50) {
 
         console.log("DEBUG: About to call getTop50 on contract:", LEADERBOARD_CONTRACT_ADDRESS);
         
-        // getTop50 fonksiyonunu çağır
-        const result = await leaderboardContract.methods.getTop50().call();
+        // getTop50 fonksiyonunu çağır - Cache engelleme eklendi
+        const result = await leaderboardContract.methods.getTop50().call({ cache: 'no-store' });
         
         console.log("DEBUG: Raw result received from getTop50:", result);
         console.log("DEBUG: Type of result:", typeof result);
