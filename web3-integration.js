@@ -301,8 +301,7 @@ async function submitScoreToBlockchain(score) {
             return { success: false, error: "User cancelled the transaction" };
         }
         
-        // For other errors, log to console and return error message
-        console.error('Submit error:', error);
+        // For other errors, return error message without logging to console
         return { success: false, error: error.message || "Transaction failed" };
     }
 }
