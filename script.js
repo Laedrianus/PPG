@@ -469,8 +469,16 @@ async function showGameOver(){
 
 async function loadAndRenderLeaderboard(){
   try {
+    // Başlangıçta loading mesajını göster ve temizle
+    leaderboardLoading.classList.remove('hidden');
+    leaderboardLoading.textContent = 'Loading...';
+    leaderboardLoading.className = 'info'; // Varsayılan sınıf
+    leaderboardTable.classList.add('hidden'); // Tabloyu gizle
+    leaderboardBody.innerHTML = ''; // Tablo içeriğini temizle
+
     if (typeof getLeaderboardFromBlockchain !== 'function') {
       leaderboardLoading.textContent = 'Leaderboard integration missing.';
+      leaderboardLoading.className = 'error';
       return;
     }
     const res = await getLeaderboardFromBlockchain(50);
@@ -489,6 +497,7 @@ function renderLeaderboard(rows){
   leaderboardBody.innerHTML = '';
   if (!rows || rows.length === 0){
     leaderboardLoading.textContent = 'No scores yet.';
+    leaderboardLoading.className = 'info'; // Varsayılan sınıf
     return;
   }
   // *** DÜZELTME: Hata mesajını temizle ve loading div'ini gizle ***
