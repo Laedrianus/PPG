@@ -491,6 +491,7 @@ function renderLeaderboard(rows){
     leaderboardLoading.textContent = 'No scores yet.';
     return;
   }
+  // *** DÜZELTME: Hata mesajını temizle ve loading div'ini gizle ***
   leaderboardLoading.classList.add('hidden');
   leaderboardTable.classList.remove('hidden');
 
