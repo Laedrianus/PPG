@@ -182,33 +182,96 @@ let leaderboardContract;
 // RPC URL'sindeki boşluk karakterlerini temizledim
 const PHAROS_RPC_URL = "https://api.zan.top/node/v1/pharos/testnet/b89512a57f014c6ca7f8d791bc8f8471";
 
+// --- YENI: Pharos Testnet Ağ Bilgileri ---
+const PHAROS_TESTNET_PARAMS = {
+  chainId: '0x5079', // 20601 decimal olarak
+  chainName: 'Pharos Testnet',
+  nativeCurrency: {
+    name: 'PHR',
+    symbol: 'PHR',
+    decimals: 18,
+  },
+  rpcUrls: ['https://pharos-testnet.node1.zan.top'],
+  blockExplorerUrls: ['https://testnet.pharosscan.xyz'],
+};
+// --- YENI SON ---
+
 async function connectToWeb3Interactive() {
-    try {
-        if (window.ethereum) {
-            web3 = new Web3(window.ethereum);
-            const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-            if (!accounts || accounts.length === 0) {
-                throw new Error('No accounts returned');
+  try {
+    if (window.ethereum) {
+      // 1. Önce kullanıcıdan hesap erişimi iste
+      const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+      if (!accounts || accounts.length === 0) {
+        throw new Error('No accounts returned');
+      }
+      userAccount = accounts[0];
+
+      // 2. Kullanıcının bağlı olduğu ağın Chain ID'sini al
+      const currentChainId = await window.ethereum.request({ method: 'eth_chainId' });
+      console.log("Current Chain ID:", currentChainId);
+
+      // 3. Pharos Testnet'in Chain ID'si ile karşılaştır
+      if (currentChainId !== PHAROS_TESTNET_PARAMS.chainId) {
+        console.log("Kullanıcı Pharos Testnet'te değil. Ağ değiştirme/ekleme deneniyor...");
+        try {
+          // 4a. Önce ağı değiştirmeyi dene
+          await window.ethereum.request({
+            method: 'wallet_switchEthereumChain',
+            params: [{ chainId: PHAROS_TESTNET_PARAMS.chainId }],
+          });
+          console.log("Ağ başarıyla değiştirildi.");
+        } catch (switchError) {
+          // Bu hata, ağın cüzdana ekli olmadığını gösterebilir (error.code === 4902)
+          if (switchError.code === 4902) {
+            console.log("Ağ cüzdana ekli değil. Ekleniyor...");
+            try {
+              // 4b. Ağ cüzdana eklenmiyorsa, eklemeyi dene
+              await window.ethereum.request({
+                method: 'wallet_addEthereumChain',
+                params: [PHAROS_TESTNET_PARAMS],
+              });
+              console.log("Ağ başarıyla eklendi ve seçildi.");
+              // Ağ eklendikten sonra otomatik olarak seçilmeli, ama emin olmak için tekrar kontrol edebiliriz.
+              // Genellikle gerek yoktur.
+            } catch (addError) {
+              console.error("Ağ eklenirken hata oluştu:", addError);
+              throw new Error(`Ağ eklenemedi: ${addError.message || String(addError)}`);
             }
-            userAccount = accounts[0];
-            contract = new web3.eth.Contract(ORIGINAL_CONTRACT_ABI, ORIGINAL_CONTRACT_ADDRESS);
-            // --- YENI: Liderlik sözleşmesini başlat ---
-            leaderboardContract = new web3.eth.Contract(LEADERBOARD_CONTRACT_ABI, LEADERBOARD_CONTRACT_ADDRESS);
-            // --- YENI SON ---
-            return { success: true, account: userAccount };
-        } else {
-            web3 = new Web3(new Web3.providers.HttpProvider(PHAROS_RPC_URL));
-            contract = new web3.eth.Contract(ORIGINAL_CONTRACT_ABI, ORIGINAL_CONTRACT_ADDRESS);
-            // --- YENI: Liderlik sözleşmesini başlat ---
-            leaderboardContract = new web3.eth.Contract(LEADERBOARD_CONTRACT_ABI, LEADERBOARD_CONTRACT_ADDRESS);
-            // --- YENI SON ---
-            return { success: false, error: 'MetaMask not detected' };
+          } else {
+            // Diğer switch hataları (kullanıcı reddetti vs.)
+            console.error("Ağ değiştirilemedi:", switchError);
+            throw new Error(`Ağ değiştirilemedi: ${switchError.message || String(switchError)}`);
+          }
         }
-    } catch (err) {
-        console.error('Connection error:', err);
-        return { success: false, error: err.message || String(err) };
+        // Ağ değiştirildikten/eklendikten sonra, web3 nesnesini yeniden oluşturmak iyi olur
+        // çünkü provider'ın bağlandığı ağ değişmiş olabilir.
+      }
+
+      // 5. Artık doğru ağdayız (olmalı), web3 nesnesini oluştur
+      web3 = new Web3(window.ethereum);
+      
+      // 6. Sözleşmeleri başlat
+      contract = new web3.eth.Contract(ORIGINAL_CONTRACT_ABI, ORIGINAL_CONTRACT_ADDRESS);
+      leaderboardContract = new web3.eth.Contract(LEADERBOARD_CONTRACT_ABI, LEADERBOARD_CONTRACT_ADDRESS);
+      
+      console.log("Cüzdan başarıyla bağlandı ve doğru ağ seçildi/eklendi:", userAccount);
+      return { success: true, account: userAccount };
+    } else {
+      // window.ethereum yoksa, salt okunur modu başlat
+      console.log("Cüzdan bulunamadı, salt okunur moda geçiliyor.");
+      web3 = new Web3(new Web3.providers.HttpProvider(PHAROS_RPC_URL));
+      contract = new web3.eth.Contract(ORIGINAL_CONTRACT_ABI, ORIGINAL_CONTRACT_ADDRESS);
+      leaderboardContract = new web3.eth.Contract(LEADERBOARD_CONTRACT_ABI, LEADERBOARD_CONTRACT_ADDRESS);
+      return { success: false, error: 'MetaMask not detected' };
     }
+  } catch (err) {
+    console.error('Connection error:', err);
+    // Hatanın içeriğine göre daha kullanıcı dostu mesajlar döndürebilirsiniz
+    // Örneğin, "Ağ değiştirme reddedildi" veya "Ağ eklenemedi" gibi
+    return { success: false, error: err.message || String(err) };
+  }
 }
+
 
 function initReadOnlyWeb3() {
     // Her zaman yeni bir web3 başlat ve doğrudan RPC'yi kullan
