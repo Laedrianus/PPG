@@ -174,7 +174,6 @@ const ORIGINAL_CONTRACT_ABI = [
 
 let leaderboardContract;
 
-// RPC URL'sindeki fazladan boşlukları temizledim
 const PHAROS_RPC_URL = "https://testnet.dplabs-internal.com";
 
 const PHAROS_TESTNET_CONFIG = {
@@ -297,19 +296,13 @@ async function submitScoreToBlockchain(score) {
     } catch (error) {
         // Check if the user rejected the transaction
         if (error.code === 4001 || (error.message && error.message.includes("User denied transaction signature"))) {
-            // User rejected the transaction, show simple alert without "Error:" prefix
-            alert("User cancelled the transaction!");
-            // Return error object without the "Error:" prefix in the message
+            // User rejected the transaction, show simple alert
+            alert("User cancelled the transaction");
             return { success: false, error: "User cancelled the transaction" };
         }
         
         // For other errors, return error message without logging to console
-        // Also remove potential "Error:" prefix from the message
-        let cleanErrorMessage = error.message || "Transaction failed";
-        if (cleanErrorMessage.startsWith("Error: ")) {
-            cleanErrorMessage = cleanErrorMessage.substring(7); // "Error: " uzunluğu 7
-        }
-        return { success: false, error: cleanErrorMessage };
+        return { success: false, error: error.message || "Transaction failed" };
     }
 }
 
@@ -392,12 +385,7 @@ async function getLeaderboardFromBlockchain(limit = 50) {
         if (error.stack) {
             console.error("Error stack:", error.stack);
         }
-        // Hata mesajından "Error:" önekini kaldır
-        let cleanErrorMessage = error.message || "Could not fetch leaderboard";
-        if (cleanErrorMessage.startsWith("Error: ")) {
-             cleanErrorMessage = cleanErrorMessage.substring(7);
-        }
-        return { success: false, error: cleanErrorMessage };
+        return { success: false, error: error.message || "Could not fetch leaderboard" };
     } finally {
         if (localWeb3) {
         }
