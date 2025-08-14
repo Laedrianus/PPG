@@ -295,6 +295,14 @@ async function submitScoreToBlockchain(score) {
         return { success: true, txHash: tx.transactionHash };
     } catch (error) {
         console.error('Submit error:', error);
+        
+        // Check if the user rejected the transaction
+        if (error.code === 4001 || (error.message && error.message.includes("User denied transaction signature"))) {
+            // User rejected the transaction, return a silent failure
+            return { success: false, error: "User cancelled the transaction" };
+        }
+        
+        // For other errors, return the error message
         return { success: false, error: error.message || "Transaction failed" };
     }
 }
