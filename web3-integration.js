@@ -180,18 +180,18 @@ let leaderboardContract;
 // --- YENI SON ---
 
 // RPC URL'sindeki boşluk karakterlerini temizledim
-const PHAROS_RPC_URL = "https://api.zan.top/node/v1/pharos/testnet/b89512a57f014c6ca7f8d791bc8f8471";
+const PHAROS_RPC_URL = "https://testnet.dplabs-internal.com";
 
 // --- YENI: Pharos Testnet Ağ Bilgileri ---
 const PHAROS_TESTNET_PARAMS = {
-  chainId: '0x5079', // 20601 decimal olarak
+  chainId: '0xA86A8', // 688688 decimal olarak
   chainName: 'Pharos Testnet',
   nativeCurrency: {
     name: 'PHR',
     symbol: 'PHR',
     decimals: 18,
   },
-  rpcUrls: ['https://pharos-testnet.node1.zan.top'],
+  rpcUrls: ['https://testnet.dplabs-internal.com'],
   blockExplorerUrls: ['https://testnet.pharosscan.xyz'],
 };
 // --- YENI SON ---
