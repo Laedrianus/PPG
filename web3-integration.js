@@ -1,4 +1,3 @@
-
 let web3;
 let contract;
 let userAccount;
@@ -180,20 +179,21 @@ const ORIGINAL_CONTRACT_ABI = [
 let leaderboardContract;
 // --- YENI SON ---
 
-// RPC URL'sindeki boşluk karakterlerini temizledim
-const PHAROS_RPC_URL = "https://api.zan.top/node/v1/pharos/testnet/b89512a57f014c6ca7f8d791bc8f8471";
+// --- GUNCELLENMIS RPC URL ---
+const PHAROS_RPC_URL = "https://testnet.dplabs-internal.com";
+// --- GUNCELLENMIS RPC URL SON ---
 
 // --- METAMASK AĞ YAPILANDIRMA ---
 const PHAROS_TESTNET_CONFIG = {
-    chainId: '0x' + (9747).toString(16), // Hex formatında chain ID (örnek: 9747)
+    chainId: '0x' + (688688).toString(16), // Hex formatında doğru chain ID: 688688
     chainName: 'Pharos Testnet',
     nativeCurrency: {
         name: 'PHAR',
         symbol: 'PHAR',
         decimals: 18
     },
-    rpcUrls: ['https://api.zan.top/node/v1/pharos/testnet/b89512a57f014c6ca7f8d791bc8f8471'],
-    blockExplorerUrls: ['https://pharos-testnet.explorer.zan.top/'],
+    rpcUrls: ['https://testnet.dplabs-internal.com'],
+    blockExplorerUrls: ['https://testnet.pharosscan.xyz/'],
     iconUrls: [] // Opsiyonel
 };
 
