@@ -179,6 +179,7 @@ const ORIGINAL_CONTRACT_ABI = [
 let leaderboardContract;
 // --- YENI SON ---
 
+// RPC URL'sindeki boşluk karakterlerini temizledim
 const PHAROS_RPC_URL = "https://api.zan.top/node/v1/pharos/testnet/b89512a57f014c6ca7f8d791bc8f8471";
 
 async function connectToWeb3Interactive() {
@@ -257,36 +258,99 @@ async function submitScoreToBlockchain(score) {
     }
 }
 
-// --- YENI EKLENEN FONKSIYON: Liderlik tablosunu çek ---
+// --- GUNCELLENMIS FONKSIYON: Liderlik tablosunu çek (Hata ayıklama eklenmiş) ---
 async function getLeaderboardFromBlockchain(limit = 50) {
     try {
         if (!web3 || !leaderboardContract) {
+            console.log("Initializing web3/contract...");
             initReadOnlyWeb3();
         }
         if (!leaderboardContract) {
+            console.error("ERROR: Leaderboard contract is still not initialized!");
             throw new Error("Leaderboard contract not initialized");
         }
 
+        console.log("DEBUG: About to call getTop50 on contract:", LEADERBOARD_CONTRACT_ADDRESS);
+        
         // getTop50 fonksiyonunu çağır
         const result = await leaderboardContract.methods.getTop50().call();
         
+        console.log("DEBUG: Raw result received from getTop50:", result);
+        console.log("DEBUG: Type of result:", typeof result);
+        console.log("DEBUG: Is result an array?", Array.isArray(result));
+        
+        // Web3.js bazen sonuçları farklı şekilde döndürebilir
+        let addrsArray, scoresArray;
+        if (Array.isArray(result)) {
+            // Eski Web3.js sürümleri bazen array olarak döndürebilir
+            console.log("DEBUG: Result is an array. Length:", result.length);
+            if (result.length === 2) {
+                addrsArray = result[0];
+                scoresArray = result[1];
+                console.log("DEBUG: Parsed from array - addrs:", addrsArray, "scores:", scoresArray);
+            } else {
+                console.error("ERROR: Unexpected array format from getTop50");
+                throw new Error("Unexpected result format from contract");
+            }
+        } else if (result && typeof result === 'object' && result.addrs !== undefined && result.scores !== undefined) {
+            // Yeni Web3.js sürümleri genellikle isimlendirilmiş obje olarak döndürür
+            addrsArray = result.addrs;
+            scoresArray = result.scores;
+            console.log("DEBUG: Parsed from object - addrs:", addrsArray, "scores:", scoresArray);
+        } else {
+            console.error("ERROR: Unknown result format from getTop50:", result);
+            throw new Error("Unknown result format from contract");
+        }
+
+        console.log("DEBUG: Type of addrsArray:", typeof addrsArray, "Is Array?", Array.isArray(addrsArray));
+        console.log("DEBUG: Type of scoresArray:", typeof scoresArray, "Is Array?", Array.isArray(scoresArray));
+
+        if (!Array.isArray(addrsArray) || !Array.isArray(scoresArray)) {
+            console.error("ERROR: addrs or scores is not an array!");
+            throw new Error("Contract returned invalid data structure");
+        }
+
+        console.log("DEBUG: addrsArray length:", addrsArray.length);
+        console.log("DEBUG: scoresArray length:", scoresArray.length);
+
         const rows = [];
-        for (let i = 0; i < result.addrs.length; i++) {
-            if (result.addrs[i] !== "0x0000000000000000000000000000000000000000") {
+        const loopLimit = Math.min(addrsArray.length, scoresArray.length, limit);
+        console.log("DEBUG: Processing up to", loopLimit, "entries");
+
+        for (let i = 0; i < loopLimit; i++) {
+            const addr = addrsArray[i];
+            const score = scoresArray[i];
+            console.log("DEBUG: Processing entry", i, "Address:", addr, "Score:", score);
+            
+            if (addr && addr !== "0x0000000000000000000000000000000000000000") {
+                const parsedScore = parseInt(score, 10);
+                console.log("DEBUG: Adding valid entry - Address:", addr, "Parsed Score:", parsedScore);
                 rows.push({
-                    player: result.addrs[i],
-                    score: parseInt(result.scores[i], 10)
+                    player: addr,
+                    score: parsedScore
                 });
+            } else {
+                console.log("DEBUG: Skipping entry", i, "- Address is zero or invalid");
             }
         }
 
-        return { success: true, rows: rows.slice(0, limit) };
+        console.log("DEBUG: Final leaderboard rows:", rows);
+        return { success: true, rows: rows };
     } catch (error) {
-        console.error("Failed to fetch leaderboard:", error);
+        console.error("!!! FAILED to fetch leaderboard !!!");
+        console.error("Error object:", error);
+        console.error("Error name:", error.name);
+        console.error("Error message:", error.message);
+        console.error("Error code:", error.code);
+        console.error("Error reason:", error.reason);
+        // Hatanın yığın izini (stack trace) de alalım
+        if (error.stack) {
+            console.error("Error stack:", error.stack);
+        }
         return { success: false, error: error.message || "Could not fetch leaderboard" };
     }
 }
-// --- YENI EKLENEN FONKSIYON SON ---
+// --- GUNCELLENMIS FONKSIYON SON ---
 
 // Globala aç
 window.connectToWeb3Interactive = connectToWeb3Interactive;
