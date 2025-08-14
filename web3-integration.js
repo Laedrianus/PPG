@@ -174,7 +174,7 @@ const ORIGINAL_CONTRACT_ABI = [
 
 let leaderboardContract;
 
-const PHAROS_RPC_URL = "https://testnet.dplabs-internal.com  ";
+const PHAROS_RPC_URL = "https://testnet.dplabs-internal.com    ";
 
 const PHAROS_TESTNET_CONFIG = {
     chainId: '0x' + (688688).toString(16),
@@ -184,8 +184,8 @@ const PHAROS_TESTNET_CONFIG = {
         symbol: 'PHAR',
         decimals: 18
     },
-    rpcUrls: ['https://testnet.dplabs-internal.com  '],
-    blockExplorerUrls: ['https://testnet.pharosscan.xyz/  '],
+    rpcUrls: ['https://testnet.dplabs-internal.com    '],
+    blockExplorerUrls: ['https://testnet.pharosscan.xyz/    '],
     iconUrls: []
 };
 
