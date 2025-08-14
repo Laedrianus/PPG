@@ -177,7 +177,7 @@ let leaderboardContract;
 const PHAROS_RPC_URL = "https://testnet.dplabs-internal.com";
 
 const PHAROS_TESTNET_CONFIG = {
-    chainId: '0x' + (688688).toString(16),
+    chainId: '0xA81F99',
     chainName: 'Pharos Testnet',
     nativeCurrency: {
         name: 'PHAR',
@@ -189,29 +189,87 @@ const PHAROS_TESTNET_CONFIG = {
     iconUrls: []
 };
 
-async function switchOrAddPharosNetwork() {
+const PHAROS_MAINNET_CONFIG = {
+    chainId: '0xMAINNET_CHAIN_ID_HEX',
+    chainName: 'Pharos Mainnet',
+    nativeCurrency: {
+        name: 'PHAR',
+        symbol: 'PHAR',
+        decimals: 18
+    },
+    rpcUrls: ['MAINNET_RPC_URL'],
+    blockExplorerUrls: ['MAINNET_EXPLORER_URL'],
+    iconUrls: []
+};
+
+const NETWORKS = {
+  '0xA81F99': {
+    name: 'Pharos Testnet',
+    contracts: {
+      original: {
+        address: "0x15A96966a7003bfc63B58ee9658418DB72D3974D",
+        abi: ORIGINAL_CONTRACT_ABI
+      },
+      leaderboard: {
+        address: "0x1f124e276e4b503e9d6852e0f4489cfdbb1b412c",
+        abi: LEADERBOARD_CONTRACT_ABI
+      }
+    },
+    rpcUrl: "https://testnet.dplabs-internal.com",
+    explorerUrl: "https://testnet.pharosscan.xyz/"
+  },
+  '0xMAINNET_CHAIN_ID_HEX': {
+    name: 'Pharos Mainnet',
+    contracts: {
+      original: {
+        address: "MAINNET_ORIGINAL_CONTRACT_ADDRESS",
+        abi: ORIGINAL_CONTRACT_ABI
+      },
+      leaderboard: {
+        address: "MAINNET_LEADERBOARD_CONTRACT_ADDRESS",
+        abi: LEADERBOARD_CONTRACT_ABI
+      }
+    },
+    rpcUrl: "MAINNET_RPC_URL",
+    explorerUrl: "MAINNET_EXPLORER_URL"
+  }
+};
+
+let currentNetwork = 'testnet';
+
+async function switchOrAddPharosNetwork(targetNetwork = 'testnet') {
     if (!window.ethereum) {
         alert("MetaMask not installed!");
         return false;
     }
 
-    const chainIdHex = PHAROS_TESTNET_CONFIG.chainId;
+    let networkConfig;
+    if (targetNetwork === 'mainnet') {
+        networkConfig = PHAROS_MAINNET_CONFIG;
+    } else {
+        networkConfig = PHAROS_TESTNET_CONFIG;
+    }
 
+    const chainIdHex = networkConfig.chainId;
     try {
         await window.ethereum.request({
             method: 'wallet_switchEthereumChain',
             params: [{ chainId: chainIdHex }]
         });
-        console.log("Already connected to Pharos Testnet network.");
+        console.log(`Already connected to ${networkConfig.chainName} network.`);
+        currentNetwork = targetNetwork;
+        applyNetworkTheme(currentNetwork);
         return true;
     } catch (switchError) {
         if (switchError.code === 4902) {
             try {
                 await window.ethereum.request({
                     method: 'wallet_addEthereumChain',
-                    params: [PHAROS_TESTNET_CONFIG]
+                    params: [networkConfig]
                 });
-                console.log("Pharos Testnet network successfully added.");
+                console.log(`${networkConfig.chainName} network successfully added.`);
+                currentNetwork = targetNetwork;
+                applyNetworkTheme(currentNetwork);
                 return true;
             } catch (addError) {
                 console.error("Error adding network:", addError);
@@ -226,10 +284,34 @@ async function switchOrAddPharosNetwork() {
     }
 }
 
+function applyNetworkTheme(network) {
+    const gameArea = document.querySelector('#gameCanvas') || document.querySelector('.game-container');
+    if (gameArea) {
+        if (network === 'mainnet') {
+            gameArea.classList.remove('testnet-theme');
+            gameArea.classList.add('mainnet-theme');
+            if (typeof showGameAreaMessageBridge === 'function') {
+                showGameAreaMessageBridge("PHAROS MAINNET ACTIVATED", 3000, false);
+            }
+        } else {
+            gameArea.classList.remove('mainnet-theme');
+            gameArea.classList.add('testnet-theme');
+        }
+    }
+}
+
+function showGameAreaMessageBridge(text, durationMs = 2000, isPersistent = false) {
+    if (typeof window.showGameAreaMessage === 'function') {
+        window.showGameAreaMessage(text, durationMs, isPersistent);
+    } else {
+        console.warn('showGameAreaMessage function is not available in the global scope.');
+    }
+}
+
 async function connectToWeb3Interactive() {
     try {
         if (window.ethereum) {
-            const networkAdded = await switchOrAddPharosNetwork();
+            const networkAdded = await switchOrAddPharosNetwork('testnet');
             if (!networkAdded) {
                 return { success: false, error: 'Network configuration failed.' };
             }
@@ -240,13 +322,19 @@ async function connectToWeb3Interactive() {
                 throw new Error('No accounts returned');
             }
             userAccount = accounts[0];
-            contract = new web3.eth.Contract(ORIGINAL_CONTRACT_ABI, ORIGINAL_CONTRACT_ADDRESS);
-            leaderboardContract = new web3.eth.Contract(LEADERBOARD_CONTRACT_ABI, LEADERBOARD_CONTRACT_ADDRESS);
+            
+            const networkConfig = NETWORKS[PHAROS_TESTNET_CONFIG.chainId];
+            contract = new web3.eth.Contract(networkConfig.contracts.original.abi, networkConfig.contracts.original.address);
+            leaderboardContract = new web3.eth.Contract(networkConfig.contracts.leaderboard.abi, networkConfig.contracts.leaderboard.address);
+            
+            showGameAreaMessageBridge("READY TO PHAROS MAINNET", 2500, false);
+            
             return { success: true, account: userAccount };
         } else {
             web3 = new Web3(new Web3.providers.HttpProvider(PHAROS_RPC_URL));
-            contract = new web3.eth.Contract(ORIGINAL_CONTRACT_ABI, ORIGINAL_CONTRACT_ADDRESS);
-            leaderboardContract = new web3.eth.Contract(LEADERBOARD_CONTRACT_ABI, LEADERBOARD_CONTRACT_ADDRESS);
+            const networkConfig = NETWORKS[PHAROS_TESTNET_CONFIG.chainId];
+            contract = new web3.eth.Contract(networkConfig.contracts.original.abi, networkConfig.contracts.original.address);
+            leaderboardContract = new web3.eth.Contract(networkConfig.contracts.leaderboard.abi, networkConfig.contracts.leaderboard.address);
             return { success: false, error: 'MetaMask not detected' };
         }
     } catch (err) {
@@ -262,8 +350,9 @@ function initReadOnlyWeb3() {
     
     try {
         web3 = new Web3(new Web3.providers.HttpProvider(PHAROS_RPC_URL));
-        contract = new web3.eth.Contract(ORIGINAL_CONTRACT_ABI, ORIGINAL_CONTRACT_ADDRESS);
-        leaderboardContract = new web3.eth.Contract(LEADERBOARD_CONTRACT_ABI, LEADERBOARD_CONTRACT_ADDRESS);
+        const networkConfig = NETWORKS[PHAROS_TESTNET_CONFIG.chainId];
+        contract = new web3.eth.Contract(networkConfig.contracts.original.abi, networkConfig.contracts.original.address);
+        leaderboardContract = new web3.eth.Contract(networkConfig.contracts.leaderboard.abi, networkConfig.contracts.leaderboard.address);
         console.log("Read-only Web3 initialized. RPC:", PHAROS_RPC_URL);
     } catch (err) {
         console.error('Init error:', err);
@@ -280,6 +369,8 @@ async function submitScoreToBlockchain(score) {
         }
         userAccount = accounts[0];
 
+        showGameAreaMessageBridge("SUBMITTING TO BLOCKCHAIN...", 1500, false);
+
         let gas = 200000;
         try {
             gas = await leaderboardContract.methods.submitScore(score).estimateGas({ from: userAccount });
@@ -292,16 +383,15 @@ async function submitScoreToBlockchain(score) {
             gas: Math.min(gas + 10000, 500000)
         });
 
+        showGameAreaMessageBridge("SCORE SUBMITTED!", 2000, false);
+        
         return { success: true, txHash: tx.transactionHash };
     } catch (error) {
-        // Check if the user rejected the transaction
         if (error.code === 4001 || (error.message && error.message.includes("User denied transaction signature"))) {
-            // User rejected the transaction, show simple alert
-            alert("User cancelled the transaction");
+            showGameAreaMessageBridge("TRANSACTION CANCELLED", 2000, false);
             return { success: false, error: "User cancelled the transaction" };
         }
-        
-        // For other errors, return error message without logging to console
+        showGameAreaMessageBridge("SUBMISSION FAILED", 2000, false);
         return { success: false, error: error.message || "Transaction failed" };
     }
 }
