@@ -8,7 +8,7 @@ body {
     background: radial-gradient(1200px 600px at 50% -200px, #0b1b2b, #051019 60%, #03070C);
 }
 #gameContainer {
-    width: 1200px; /* Genişletildi */
+    width: 1200px;
     margin: 24px auto;
     background: rgba(255,255,255,0.04);
     border: 1px solid rgba(255,255,255,0.08);
@@ -61,22 +61,21 @@ body {
     cursor: not-allowed;
 }
 
-/* Yeni Ana İçerik Düzeni */
 #mainContent {
     display: flex;
     gap: 20px;
 }
 #gameArea {
-    flex: 0 0 auto; /* Oyun alanının sabit kalmasını sağlar */
+    flex: 0 0 auto;
 }
 #leaderboardSidebar {
     flex: 1;
-    min-width: 0; /* Flex item'ların taşmasını engeller */
+    min-width: 0;
     background: rgba(0,0,0,0.25);
     border-radius: 10px;
     padding: 15px;
-    max-height: 620px; /* Canvas yüksekliği + padding */
-    overflow-y: auto; /* Uzun liste için kaydırma */
+    max-height: 620px;
+    overflow-y: auto;
 }
 #leaderboardSidebar h3 {
     margin-top: 0;
@@ -99,7 +98,6 @@ body {
 #leaderboardBody tr:hover {
     background-color: rgba(255,255,255,0.05);
 }
-/* Yeni Ana İçerik Düzeni Sonu */
 
 #gameCanvas {
     display: block;
@@ -147,7 +145,6 @@ body {
 a { color: #8ab4ff; text-decoration: none; }
 a:hover { text-decoration: underline; }
 
-/* Splash Screen Stili */
 #splashScreen {
     position: absolute;
     top: 0;
@@ -158,12 +155,12 @@ a:hover { text-decoration: underline; }
     display: flex;
     justify-content: center;
     align-items: center;
-    z-index: 10; /* Canvas'in üzerine gelmesi için yüksek z-index */
-    overflow: hidden; /* Resmin dışarı taşmasını engeller */
+    z-index: 10;
+    overflow: hidden;
 }
 
 #splashScreen img {
     max-width: 80%;
     max-height: 80%;
-    image-rendering: pixelated; /* Pixel art kalitesini korur */
+    image-rendering: pixelated;
 }
