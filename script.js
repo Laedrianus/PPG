@@ -197,7 +197,11 @@ connectWalletBtn.addEventListener('click', async () => {
     connectWalletBtn.textContent = 'Connected';
     connectWalletBtn.disabled = true;
     
-    document.getElementById('splashScreen').classList.add('hidden');
+    const splash = document.getElementById('splashScreen');
+    if (splash) {
+        splash.classList.add('hidden');
+        splash.style.display = 'none';
+    }
     
     await loadAndRenderLeaderboard();
   } else {
