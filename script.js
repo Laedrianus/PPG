@@ -1,3 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Pirate Parrot Game</title>
+  <link rel="stylesheet" href="style.css" />
+  <!-- Ethers (mevcut projende kullanıyorsun) -->
+  <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.min.js  "></script>
+</head>
+<body>
+  <div id="gameContainer">
+    <div id="gameHeader">
+      <h1>Pirate Parrot Game</h1>
+      <div id="scoreDisplay">Score: 0</div>
+    </div>
+
+    <div id="bonusContainer">
+      <div id="pharosBonus" class="bonus-message hidden">
+        <span>BONUS: FOLLOW Pharos on X</span>
+        <button class="follow-button" data-key="pharos" id="pharosFollowBtn">Follow</button>
+      </div>
+      <div id="blocksenseBonus" class="bonus-message hidden">
+        <span>BONUS: FOLLOW Blocksense on X</span>
+        <button class="follow-button" data-key="blocksense" id="blocksenseFollowBtn">Follow</button>
+      </div>
+    </div>
+
+    <div id="mainContent">
+      <div id="gameArea">
+        <!-- Splash Screen - Başlangıçta görünür, cüzdan bağlandığında kaybolur -->
+        <div id="splashScreen" class="hidden">
+          <img src="assets/logo.png" alt="Pirate Parrot Game" style="max-width: 80%; max-height: 80%;">
+        </div>
+
+        <canvas id="gameCanvas" width="800" height="600"></canvas>
+
+        <div id="gameControls">
+          <div id="bonusMessage"></div>
+
+          <div id="startScreen">
+            <h2>Welcome to Pirate Parrot Game!</h2>
+            <p>Use arrow keys to move, SPACEBAR to shoot</p>
+            <p>Reach 5 points for Pharos bonus, 10 points for Blocksense bonus</p>
+
+            <div id="walletConnectGroup">
+              <button id="connectWalletBtn">Connect Wallet</button>
+              <div id="walletStatus" class="info" style="margin-top:8px;">Wallet not connected</div>
+            </div>
+
+            <button id="startButton" disabled>Press ENTER or Click to Start</button>
+          </div>
+
+          <div id="gameOverScreen" class="hidden">
+            <h2>GAME OVER</h2>
+            <p>Final Score: <span id="finalScore">0</span></p>
+
+            <div id="blockchainSection">
+              <div id="blockchainStatus">Waiting to submit score...</div>
+              <div id="transactionInfo" class="hidden">
+                <p>Transaction sent successfully!</p>
+                <p>TX Hash: <a id="transactionLink" href="#" target="_blank">#</a></p>
+              </div>
+            </div>
+
+            <!-- Tweet bonus -->
+            <div id="endTweetGroup" style="margin-top:12px;">
+              <button id="tweetScoreBtn">Tweet your score for bonus</button>
+              <button id="verifyTweetBtn" class="hidden">Verify Tweet (grant bonus)</button>
+            </div>
+
+            <button id="restartButton">Restart Game</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="leaderboardSidebar">
+        <h3>Leaderboard (Top 50)</h3>
+        <div id="leaderboardLoading" class="info">Loading...</div>
+        <table id="leaderboardTable" class="hidden">
+          <thead>
+            <tr>
+              <th>Rank</th>
+              <th>Player</th>
+              <th>Score</th>
+            </tr>
+          </thead>
+          <tbody id="leaderboardBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Web3.js (mevcut entegrasyonla uyumlu) -->
+  <script src="https://cdn.jsdelivr.net/npm/web3@1.8.2/dist/web3.min.js  "></script>
+
+  <!-- On-chain entegrasyon -->
+  <script src="web3-integration.js"></script>
+
+  <!-- Oyun ana kodu -->
+  <script src="script.js"></script>
+</body>
+</html>
+```
+
+---
+
+### **style.css**
+
+```css
+* {
+    box-sizing: border-box;
+}
+body {
+    margin: 0;
+    font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    color: #eee;
+    background: radial-gradient(1200px 600px at 50% -200px, #0b1b2b, #051019 60%, #03070C);
+}
+#gameContainer {
+    width: 1200px; /* Genişletildi */
+    margin: 24px auto;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 12px;
+    padding: 16px 16px 24px;
+    backdrop-filter: blur(6px);
+}
+#gameHeader {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+}
+#gameHeader h1 {
+    margin: 0;
+    font-size: 22px;
+    letter-spacing: 0.5px;
+}
+#scoreDisplay {
+    background: rgba(0,0,0,0.4);
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-weight: 600;
+}
+#bonusContainer {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 10px;
+    min-height: 46px;
+}
+.bonus-message {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: #142033;
+    padding: 8px 10px;
+    border: 1px solid #233a5c;
+    border-radius: 10px;
+}
+.follow-button {
+    padding: 6px 10px;
+    border: 1px solid #3178ff;
+    color: #fff;
+    background: #1b4fff;
+    cursor: pointer;
+    border-radius: 8px;
+}
+.follow-button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* Yeni Ana İçerik Düzeni */
+#mainContent {
+    display: flex;
+    gap: 20px;
+}
+#gameArea {
+    flex: 0 0 auto; /* Oyun alanının sabit kalmasını sağlar */
+}
+#leaderboardSidebar {
+    flex: 1;
+    min-width: 0; /* Flex item'ların taşmasını engeller */
+    background: rgba(0,0,0,0.25);
+    border-radius: 10px;
+    padding: 15px;
+    max-height: 620px; /* Canvas yüksekliği + padding */
+    overflow-y: auto; /* Uzun liste için kaydırma */
+}
+#leaderboardSidebar h3 {
+    margin-top: 0;
+    margin-bottom: 15px;
+    text-align: center;
+}
+#leaderboardTable {
+    width: 100%;
+    border-collapse: collapse;
+}
+#leaderboardTable th, #leaderboardTable td {
+    padding: 8px 12px;
+    text-align: left;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+#leaderboardTable th {
+    background-color: rgba(0,0,0,0.3);
+    font-weight: bold;
+}
+#leaderboardBody tr:hover {
+    background-color: rgba(255,255,255,0.05);
+}
+/* Yeni Ana İçerik Düzeni Sonu */
+
+#gameCanvas {
+    display: block;
+    margin: 0 auto 10px;
+    border: 1px solid rgba(255,255,255,0.08);
+    background: #000;
+    border-radius: 10px;
+}
+#gameControls {
+    display: grid;
+    gap: 12px;
+}
+#bonusMessage {
+    min-height: 22px;
+    color: #ffd166;
+    font-weight: 600;
+}
+#startScreen, #gameOverScreen {
+    text-align: center;
+    padding: 10px;
+    background: rgba(0,0,0,0.25);
+    border-radius: 10px;
+}
+#startButton, #restartButton, #connectWalletBtn, #tweetScoreBtn, #verifyTweetBtn {
+    padding: 10px 16px;
+    border: none;
+    border-radius: 10px;
+    background: #1b4fff;
+    color: white;
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: 8px;
+}
+#startButton:disabled {
+    background: #3a4b78;
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+.hidden {
+    display: none !important;
+}
+.info { color: #a8c1ff; }
+.success { color: #57e389; }
+.error { color: #ff6b6b; }
+a { color: #8ab4ff; text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+/* Splash Screen Stili */
+#splashScreen {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: black;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 10; /* Canvas'in üzerine gelmesi için yüksek z-index */
+    overflow: hidden; /* Resmin dışarı taşmasını engeller */
+}
+
+#splashScreen img {
+    max-width: 80%;
+    max-height: 80%;
+    image-rendering: pixelated; /* Pixel art kalitesini korur */
+}
+```
+
+---
+
+### **script.js**
+
+```javascript
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 const scoreDisplay = document.getElementById('scoreDisplay');
@@ -16,6 +302,10 @@ const pharosFollowBtn = document.getElementById('pharosFollowBtn');
 const blocksenseFollowBtn = document.getElementById('blocksenseFollowBtn');
 const tweetScoreBtn = document.getElementById('tweetScoreBtn');
 const verifyTweetBtn = document.getElementById('verifyTweetBtn');
+
+// --- YENI: Splash Screen ---
+const splashScreen = document.getElementById('splashScreen');
+// --- YENI SON ---
 
 const leaderboardLoading = document.getElementById('leaderboardLoading');
 const leaderboardTable = document.getElementById('leaderboardTable');
@@ -203,6 +493,9 @@ connectWalletBtn.addEventListener('click', async () => {
     connectWalletBtn.textContent = 'Connected';
     connectWalletBtn.disabled = true;
     
+    // Splash screen'i gizle
+    splashScreen.classList.add('hidden');
+    
     await loadAndRenderLeaderboard();
   } else {
     walletConnected = false;
@@ -223,7 +516,7 @@ async function pauseGameForFollow(key) {
   if (gamePaused) return;
   gamePaused = true; gameRunning = false;
   showBonusMessage('Opening X in new tab. Verify after follow.');
-  const url = key==='pharos' ? 'https://x.com/pharos_network' : 'https://x.com/blocksense_';
+  const url = key==='pharos' ? 'https://x.com/pharos_network  ' : 'https://x.com/blocksense_  ';
   window.open(url, '_blank');
   const btn = key==='pharos' ? pharosFollowBtn : blocksenseFollowBtn;
   btn.textContent = 'Verify'; btn.disabled = false;
@@ -453,7 +746,7 @@ async function showGameOver(){
       blockchainSubmitted = true;
       const transactionLink = document.getElementById('transactionLink');
       transactionLink.textContent = `${res.txHash.substring(0, 20)}...`;
-      transactionLink.href = `https://testnet.pharosscan.xyz/tx/${res.txHash}`;
+      transactionLink.href = `  https://testnet.pharosscan.xyz/tx/  ${res.txHash}`;
       document.getElementById('transactionInfo').classList.remove('hidden');
     } else {
       blockchainStatus.textContent = `Error: ${res.error}`;
@@ -469,16 +762,8 @@ async function showGameOver(){
 
 async function loadAndRenderLeaderboard(){
   try {
-    // Başlangıçta loading mesajını göster ve temizle
-    leaderboardLoading.classList.remove('hidden');
-    leaderboardLoading.textContent = 'Loading...';
-    leaderboardLoading.className = 'info'; // Varsayılan sınıf
-    leaderboardTable.classList.add('hidden'); // Tabloyu gizle
-    leaderboardBody.innerHTML = ''; // Tablo içeriğini temizle
-
     if (typeof getLeaderboardFromBlockchain !== 'function') {
       leaderboardLoading.textContent = 'Leaderboard integration missing.';
-      leaderboardLoading.className = 'error';
       return;
     }
     const res = await getLeaderboardFromBlockchain(50);
@@ -497,10 +782,8 @@ function renderLeaderboard(rows){
   leaderboardBody.innerHTML = '';
   if (!rows || rows.length === 0){
     leaderboardLoading.textContent = 'No scores yet.';
-    leaderboardLoading.className = 'info'; // Varsayılan sınıf
     return;
   }
-  // *** DÜZELTME: Hata mesajını temizle ve loading div'ini gizle ***
   leaderboardLoading.classList.add('hidden');
   leaderboardTable.classList.remove('hidden');
 
