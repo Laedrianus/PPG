@@ -22,10 +22,17 @@ body {
     justify-content: space-between;
     margin-bottom: 12px;
 }
+#gameLogo {
+    height: 50px;
+    width: auto;
+    margin-right: 10px;
+}
 #gameHeader h1 {
     margin: 0;
     font-size: 22px;
     letter-spacing: 0.5px;
+    flex-grow: 1;
+    text-align: center;
 }
 #scoreDisplay {
     background: rgba(0,0,0,0.4);
@@ -67,7 +74,6 @@ body {
 }
 #gameArea {
     flex: 0 0 auto;
-    position: relative; /* Eklendi */
 }
 #leaderboardSidebar {
     flex: 1;
@@ -145,24 +151,3 @@ body {
 .error { color: #ff6b6b; }
 a { color: #8ab4ff; text-decoration: none; }
 a:hover { text-decoration: underline; }
-
-#splashScreen {
-    /* position: absolute; Kaldırıldı */
-    /* top, left, width, height değerleri korunuyor */
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: black;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    overflow: hidden;
-    /* z-index: 10; Kaldırıldı */
-}
-
-#splashScreen img {
-    max-width: 80%;
-    max-height: 80%;
-    image-rendering: pixelated;
-}
