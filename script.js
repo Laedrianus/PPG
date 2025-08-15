@@ -17,8 +17,6 @@ const blocksenseFollowBtn = document.getElementById('blocksenseFollowBtn');
 const tweetScoreBtn = document.getElementById('tweetScoreBtn');
 const verifyTweetBtn = document.getElementById('verifyTweetBtn');
 
-const splashScreen = document.getElementById('splashScreen');
-
 const leaderboardLoading = document.getElementById('leaderboardLoading');
 const leaderboardTable = document.getElementById('leaderboardTable');
 const leaderboardBody = document.getElementById('leaderboardBody');
@@ -48,6 +46,7 @@ let player = { x: GAME_WIDTH / 2 - 32, y: GAME_HEIGHT - 100, width: 64, height: 
 let enemies = [];
 let bullets = [];
 
+// --- YENI EKLENEN KISIM: Ses Efektleri ---
 let sounds = {};
 let soundsLoaded = false;
 
@@ -63,14 +62,17 @@ function loadSounds() {
         sounds.gameStart = new Audio('assets/game_start.mp3');
         sounds.gameOver = new Audio('assets/game_over.mp3');
         
+        // Ses dosyalarının yüklenmesini bekle
         const soundPromises = Object.values(sounds).map(sound => {
             return new Promise((resolve) => {
                 sound.addEventListener('canplaythrough', resolve);
-                sound.addEventListener('error', resolve);
+                sound.addEventListener('error', resolve); // Hata durumunda da devam et
+                // Zaman aşımı ekle (5 saniye)
                 setTimeout(resolve, 5000);
             });
         });
         
+        // Tüm sesler yüklendiğinde veya zaman aşımına uğradığında
         Promise.all(soundPromises).then(() => {
             soundsLoaded = true;
             console.log("Ses efektleri yüklendi");
@@ -87,14 +89,18 @@ function playSound(soundName) {
     if (!soundsLoaded || !sounds[soundName]) return;
     
     try {
+        // Sesin baştan başlamasını sağla
         sounds[soundName].currentTime = 0;
+        // Ses çal
         sounds[soundName].play().catch(e => {
+            // Otomatik oynatma engellenirse sessiz kalabilir
             console.log(`Ses çalınamadı (${soundName}):`, e.message);
         });
     } catch (e) {
         console.log(`Ses çalınamadı (${soundName}):`, e.message);
     }
 }
+// --- YENI EKLENEN KISIM SONU ---
 
 let dataParticles = [];
 const BLOCKCHAIN_WORDS = ["DATA", "FEED", "VERIFIED", "ORACLE"];
@@ -177,16 +183,16 @@ document.addEventListener('keyup', (e) => {
 });
 
 startButton.addEventListener('click', () => {
-  playSound('buttonClick');
+  playSound('buttonClick'); // Buton tıklama sesi
   if (walletConnected) startGame(); else showBonusMessage('Connect wallet first');
 });
 restartButton.addEventListener('click', () => {
-  playSound('buttonClick');
+  playSound('buttonClick'); // Buton tıklama sesi
   resetGame();
 });
 
 connectWalletBtn.addEventListener('click', async () => {
-  playSound('buttonClick');
+  playSound('buttonClick'); // Buton tıklama sesi
   connectWalletBtn.disabled = true;
   walletStatus.textContent = 'Connecting...';
   const res = await connectToWeb3Interactive();
@@ -196,13 +202,6 @@ connectWalletBtn.addEventListener('click', async () => {
     startButton.disabled = false;
     connectWalletBtn.textContent = 'Connected';
     connectWalletBtn.disabled = true;
-    
-    // Splash screen'i gizle
-    const splash = document.getElementById('splashScreen');
-    if (splash) {
-        splash.classList.add('hidden');
-        splash.style.display = 'none';
-    }
     
     await loadAndRenderLeaderboard();
   } else {
@@ -214,7 +213,7 @@ connectWalletBtn.addEventListener('click', async () => {
 
 function setupFollowButtons() {
   const followHandler = (evt) => {
-    playSound('buttonClick');
+    playSound('buttonClick'); // Buton tıklama sesi
     pauseGameForFollow(evt.target.dataset.key);
   };
   pharosFollowBtn.addEventListener('click', followHandler);
@@ -229,7 +228,7 @@ async function pauseGameForFollow(key) {
   const btn = key==='pharos' ? pharosFollowBtn : blocksenseFollowBtn;
   btn.textContent = 'Verify'; btn.disabled = false;
   btn.onclick = () => { 
-    playSound('buttonClick');
+    playSound('buttonClick'); // Buton tıklama sesi
     grantFollowBonus(key); btn.onclick = null; 
   };
 }
@@ -237,7 +236,7 @@ function grantFollowBonus(key) {
   if (key==='pharos' && pharosUnlocked) score += 3;
   else if (key==='blocksense' && blocksenseUnlocked) score += 5;
   updateScore();
-  playSound('bonus');
+  playSound('bonus'); // Bonus alma sesi
   showBonusMessage('Bonus awarded. Resuming game.');
   gamePaused = false; gameRunning = true;
   const btn = key==='pharos' ? pharosFollowBtn : blocksenseFollowBtn;
@@ -245,7 +244,7 @@ function grantFollowBonus(key) {
 }
 
 tweetScoreBtn.addEventListener('click', () => {
-  playSound('buttonClick');
+  playSound('buttonClick'); // Buton tıklama sesi
   const text = `Game over — my score: ${score} #PirateParrotGame @blocksense_ @pharos_network`;
   const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`;
   window.open(url, '_blank');
@@ -253,11 +252,11 @@ tweetScoreBtn.addEventListener('click', () => {
   verifyTweetBtn.classList.remove('hidden');
 });
 verifyTweetBtn.addEventListener('click', () => {
-  playSound('buttonClick');
+  playSound('buttonClick'); // Buton tıklama sesi
   if (!tweetBonusApplied) {
     score += 5; tweetBonusApplied = true;
     finalScoreDisplay.textContent = score;
-    playSound('bonus');
+    playSound('bonus'); // Bonus alma sesi
     showBonusMessage('Tweet bonus applied.');
   }
   verifyTweetBtn.classList.add('hidden');
@@ -281,7 +280,7 @@ function fireBullet(){
   if (keys.Space && now - lastShotTime > shootInterval) {
     lastShotTime = now;
     bullets.push({ x: player.x + player.width/2 - 15, y: player.y, width: 30, height: 30 });
-    playSound('shoot');
+    playSound('shoot'); // Ateş etme sesi
   }
 }
 function moveBullets(){
@@ -306,7 +305,7 @@ function checkCollisions(){
   if (gamePaused) return;
   for (let i=0;i<enemies.length;i++){
     if (isColliding(player, enemies[i])) { 
-      playSound('playerDeath');
+      playSound('playerDeath'); // Oyuncu ölümü sesi
       showGameOver(); return; 
     }
   }
@@ -333,11 +332,11 @@ function checkCollisions(){
           }
         } else if (hit.type==='letter'){
           shootInterval = Math.max(MIN_SHOOT_INTERVAL, Math.floor(shootInterval*0.85));
-          playSound('bonus');
+          playSound('bonus'); // Bonus alma sesi
           score += 1; showBonusMessage(`FIRE RATE UP! (${shootInterval}ms)`);
         }
         updateScore();
-        playSound('hit');
+        playSound('hit'); // Vuruş sesi
         
         for (let p = 0; p < 5; p++) {
             dataParticles.push(new DataParticle(bulletX, bulletY));
@@ -403,7 +402,7 @@ function startGame(){
   if (!gameStarted){
     gameStarted=true; gameRunning=true; gamePaused=false; 
     startScreen.classList.add('hidden');
-    playSound('gameStart');
+    playSound('gameStart'); // Oyun başlatma sesi
     spawnInitialEnemies(); updateScore();
   } else if (!gameRunning){
     gameRunning=true; gamePaused=false; gameOverScreen.classList.add('hidden');
@@ -436,7 +435,7 @@ async function showGameOver(){
   gameRunning=false; gamePaused=false;
   finalScoreDisplay.textContent = score;
   gameOverScreen.classList.remove('hidden');
-  playSound('gameOver');
+  playSound('gameOver'); // Oyun bitiş sesi
 
   leaderboardLoading.classList.remove('hidden');
   leaderboardLoading.textContent = 'Loading...';
@@ -711,7 +710,7 @@ function applyEnhancedStyles() {
 window.addEventListener('load', () => {
     setTimeout(() => {
         applyEnhancedStyles();
-        loadSounds();
+        loadSounds(); // Ses efektlerini yükle
         
         if (typeof initReadOnlyWeb3 === 'function') {
             initReadOnlyWeb3();
