@@ -177,21 +177,21 @@ let leaderboardContract;
 const PHAROS_RPC_URL = "https://testnet.dplabs-internal.com";
 
 const PHAROS_TESTNET_CONFIG = {
-    chainId: '0x' + (688688).toString(16),
+    chainId: '0xA86A8',
     chainName: 'Pharos Testnet',
     nativeCurrency: {
         name: 'PHAR',
         symbol: 'PHAR',
         decimals: 18
     },
-    rpcUrls: ['https://testnet.dplabs-internal.com'],
+    rpcUrls: [PHAROS_RPC_URL],
     blockExplorerUrls: ['https://testnet.pharosscan.xyz/'],
     iconUrls: []
 };
 
 async function switchOrAddPharosNetwork() {
     if (!window.ethereum) {
-        alert("MetaMask not installed!");
+        console.error("MetaMask not installed!");
         return false;
     }
 
@@ -202,7 +202,7 @@ async function switchOrAddPharosNetwork() {
             method: 'wallet_switchEthereumChain',
             params: [{ chainId: chainIdHex }]
         });
-        console.log("Already connected to Pharos Testnet network.");
+        console.log("Switched to Pharos Testnet network.");
         return true;
     } catch (switchError) {
         if (switchError.code === 4902) {
@@ -211,16 +211,14 @@ async function switchOrAddPharosNetwork() {
                     method: 'wallet_addEthereumChain',
                     params: [PHAROS_TESTNET_CONFIG]
                 });
-                console.log("Pharos Testnet network successfully added.");
+                console.log("Pharos Testnet network added and selected.");
                 return true;
             } catch (addError) {
                 console.error("Error adding network:", addError);
-                alert("Could not add network. Please add it manually.");
                 return false;
             }
         } else {
             console.error("Could not switch network:", switchError);
-            alert("Could not switch network. Please change it manually.");
             return false;
         }
     }
@@ -231,23 +229,25 @@ async function connectToWeb3Interactive() {
         if (window.ethereum) {
             const networkAdded = await switchOrAddPharosNetwork();
             if (!networkAdded) {
-                return { success: false, error: 'Network configuration failed.' };
+                return { success: false, error: 'Network configuration failed or was rejected.' };
             }
 
             web3 = new Web3(window.ethereum);
             const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
             if (!accounts || accounts.length === 0) {
-                throw new Error('No accounts returned');
+                throw new Error('No accounts returned by wallet.');
             }
             userAccount = accounts[0];
             contract = new web3.eth.Contract(ORIGINAL_CONTRACT_ABI, ORIGINAL_CONTRACT_ADDRESS);
             leaderboardContract = new web3.eth.Contract(LEADERBOARD_CONTRACT_ABI, LEADERBOARD_CONTRACT_ADDRESS);
+            console.log("Wallet connected:", userAccount);
             return { success: true, account: userAccount };
         } else {
+            console.log("No wallet detected, falling back to read-only mode.");
             web3 = new Web3(new Web3.providers.HttpProvider(PHAROS_RPC_URL));
             contract = new web3.eth.Contract(ORIGINAL_CONTRACT_ABI, ORIGINAL_CONTRACT_ADDRESS);
             leaderboardContract = new web3.eth.Contract(LEADERBOARD_CONTRACT_ABI, LEADERBOARD_CONTRACT_ADDRESS);
-            return { success: false, error: 'MetaMask not detected' };
+            return { success: false, error: 'MetaMask or compatible wallet not detected.' };
         }
     } catch (err) {
         console.error('Connection error:', err);
@@ -257,16 +257,16 @@ async function connectToWeb3Interactive() {
 
 function initReadOnlyWeb3() {
     if (web3) {
-        console.log("Web3 already initialized. Reinitializing.");
+        console.log("Reinitializing read-only Web3 connection.");
     }
     
     try {
         web3 = new Web3(new Web3.providers.HttpProvider(PHAROS_RPC_URL));
         contract = new web3.eth.Contract(ORIGINAL_CONTRACT_ABI, ORIGINAL_CONTRACT_ADDRESS);
         leaderboardContract = new web3.eth.Contract(LEADERBOARD_CONTRACT_ABI, LEADERBOARD_CONTRACT_ADDRESS);
-        console.log("Read-only Web3 initialized. RPC:", PHAROS_RPC_URL);
+        console.log("Read-only Web3 initialized with RPC:", PHAROS_RPC_URL);
     } catch (err) {
-        console.error('Init error:', err);
+        console.error('Error initializing read-only Web3:', err);
     }
 }
 
@@ -276,7 +276,7 @@ async function submitScoreToBlockchain(score) {
 
         const accounts = await web3.eth.getAccounts();
         if (!accounts || accounts.length === 0) {
-            return { success: false, error: 'Wallet not connected' };
+            return { success: false, error: 'Wallet not connected.' };
         }
         userAccount = accounts[0];
 
@@ -284,7 +284,7 @@ async function submitScoreToBlockchain(score) {
         try {
             gas = await leaderboardContract.methods.submitScore(score).estimateGas({ from: userAccount });
         } catch (e) {
-            console.warn("Gas estimate failed, using fallback");
+            console.warn("Gas estimate failed, using fallback value.");
         }
 
         const tx = await leaderboardContract.methods.submitScore(score).send({
@@ -294,14 +294,12 @@ async function submitScoreToBlockchain(score) {
 
         return { success: true, txHash: tx.transactionHash };
     } catch (error) {
-        // Check if the user rejected the transaction
         if (error.code === 4001 || (error.message && error.message.includes("User denied transaction signature"))) {
-            // User rejected the transaction, show simple alert
-            alert("User cancelled the transaction");
+            console.log("User cancelled the transaction");
             return { success: false, error: "User cancelled the transaction" };
         }
         
-        // For other errors, return error message without logging to console
+        console.error('Submit score error:', error);
         return { success: false, error: error.message || "Transaction failed" };
     }
 }
@@ -313,82 +311,47 @@ async function getLeaderboardFromBlockchain(limit = 50) {
         localWeb3 = new Web3(new Web3.providers.HttpProvider(PHAROS_RPC_URL));
         localLeaderboardContract = new localWeb3.eth.Contract(LEADERBOARD_CONTRACT_ABI, LEADERBOARD_CONTRACT_ADDRESS);
 
-        console.log("DEBUG: About to call getTop50 on contract:", LEADERBOARD_CONTRACT_ADDRESS, "via RPC:", PHAROS_RPC_URL);
-        
         const result = await localLeaderboardContract.methods.getTop50().call({ cache: 'no-store' });
         
-        console.log("DEBUG: Raw result received from getTop50:", result);
-        console.log("DEBUG: Type of result:", typeof result);
-        console.log("DEBUG: Is result an array?", Array.isArray(result));
-        
         let addrsArray, scoresArray;
-        if (Array.isArray(result)) {
-            console.log("DEBUG: Result is an array. Length:", result.length);
-            if (result.length === 2) {
-                addrsArray = result[0];
-                scoresArray = result[1];
-                console.log("DEBUG: Parsed from array - addrs:", addrsArray, "scores:", scoresArray);
-            } else {
-                console.error("ERROR: Unexpected array format from getTop50");
-                throw new Error("Unexpected result format from contract");
-            }
+        if (Array.isArray(result) && result.length === 2) {
+            addrsArray = result[0];
+            scoresArray = result[1];
         } else if (result && typeof result === 'object' && result.addrs !== undefined && result.scores !== undefined) {
             addrsArray = result.addrs;
             scoresArray = result.scores;
-            console.log("DEBUG: Parsed from object - addrs:", addrsArray, "scores:", scoresArray);
         } else {
-            console.error("ERROR: Unknown result format from getTop50:", result);
-            throw new Error("Unknown result format from contract");
+            console.error("ERROR: Unexpected result format from getTop50:", result);
+            throw new Error("Unexpected result format from contract");
         }
 
-        console.log("DEBUG: Type of addrsArray:", typeof addrsArray, "Is Array?", Array.isArray(addrsArray));
-        console.log("DEBUG: Type of scoresArray:", typeof scoresArray, "Is Array?", Array.isArray(scoresArray));
-
         if (!Array.isArray(addrsArray) || !Array.isArray(scoresArray)) {
-            console.error("ERROR: addrs or scores is not an array!");
+            console.error("ERROR: Contract returned invalid data structure");
             throw new Error("Contract returned invalid data structure");
         }
 
-        console.log("DEBUG: addrsArray length:", addrsArray.length);
-        console.log("DEBUG: scoresArray length:", scoresArray.length);
-
         const rows = [];
         const loopLimit = Math.min(addrsArray.length, scoresArray.length, limit);
-        console.log("DEBUG: Processing up to", loopLimit, "entries");
 
         for (let i = 0; i < loopLimit; i++) {
             const addr = addrsArray[i];
             const score = scoresArray[i];
-            console.log("DEBUG: Processing entry", i, "Address:", addr, "Score:", score);
             
             if (addr && addr !== "0x0000000000000000000000000000000000000000") {
                 const parsedScore = parseInt(score, 10);
-                console.log("DEBUG: Adding valid entry - Address:", addr, "Parsed Score:", parsedScore);
                 rows.push({
                     player: addr,
                     score: parsedScore
                 });
-            } else {
-                console.log("DEBUG: Skipping entry", i, "- Address is zero or invalid");
             }
         }
 
-        console.log("DEBUG: Final leaderboard rows:", rows);
         return { success: true, rows: rows };
     } catch (error) {
-        console.error("!!! FAILED to fetch leaderboard !!!");
-        console.error("Error object:", error);
-        console.error("Error name:", error.name);
-        console.error("Error message:", error.message);
-        console.error("Error code:", error.code);
-        console.error("Error reason:", error.reason);
-        if (error.stack) {
-            console.error("Error stack:", error.stack);
-        }
-        return { success: false, error: error.message || "Could not fetch leaderboard" };
+        console.error("!!! FAILED to fetch leaderboard from blockchain !!!");
+        console.error("Error details:", error);
+        return { success: false, error: error.message || "Could not fetch leaderboard data." };
     } finally {
-        if (localWeb3) {
-        }
     }
 }
 
@@ -396,6 +359,5 @@ window.connectToWeb3Interactive = connectToWeb3Interactive;
 window.submitScoreToBlockchain = submitScoreToBlockchain;
 window.getLeaderboardFromBlockchain = getLeaderboardFromBlockchain;
 window.initReadOnlyWeb3 = initReadOnlyWeb3;
-window.switchOrAddPharosNetwork = switchOrAddPharosNetwork;
 
 window.addEventListener('load', initReadOnlyWeb3);
