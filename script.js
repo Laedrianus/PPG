@@ -20,6 +20,11 @@ const leaderboardLoading = document.getElementById('leaderboardLoading');
 const leaderboardTable = document.getElementById('leaderboardTable');
 const leaderboardBody = document.getElementById('leaderboardBody');
 
+// Logo ekranı elementleri
+const logoScreen = document.getElementById('logoScreen');
+const connectWalletBtnLogo = document.getElementById('connectWalletBtnLogo');
+const walletStatusLogo = document.getElementById('walletStatusLogo');
+
 const GAME_WIDTH = 800;
 const GAME_HEIGHT = 600;
 const PLAYER_SPEED = 5;
@@ -29,7 +34,6 @@ const NUM_ENEMIES = 7;
 let shootInterval = 300;
 let lastShotTime = 0;
 const MIN_SHOOT_INTERVAL = 100;
-
 let gameRunning = false;
 let gameStarted = false;
 let score = 0;
@@ -40,16 +44,13 @@ let tweetBonusApplied = false;
 let walletConnected = false;
 let gamePaused = false;
 
-// ================== DEĞİŞİKLİK BURADA ==================
-// player nesnesinin başlangıç konumu canvas'ın sol üst köşesine alındı
 let player = {
-    x: 0, // GAME_WIDTH / 2 - 32 idi, artık sol kenarda
-    y: 0, // GAME_HEIGHT - 100 idi, artık üst kenarda
+    x: GAME_WIDTH / 2 - 32,
+    y: GAME_HEIGHT - 100,
     width: 64,
     height: 64,
     speed: PLAYER_SPEED
 };
-// ======================================================
 
 let enemies = [];
 let bullets = [];
@@ -123,12 +124,14 @@ class DataParticle {
         this.color = colors[Math.floor(Math.random() * colors.length)];
         this.fontSize = 12 + Math.random() * 4;
     }
+
     update() {
         this.x += this.dx;
         this.y += this.dy;
         this.dy += 0.1;
         this.life--;
     }
+
     draw(ctx) {
         if (this.life > 0) {
             ctx.fillStyle = this.color;
@@ -143,12 +146,18 @@ class DataParticle {
 let playerImage = new Image();
 let pharosImage = new Image();
 let blocksenseImage = new Image();
+
 playerImage.src = 'assets/player.png';
 pharosImage.src = 'assets/pharos.jpg';
 blocksenseImage.src = 'assets/blocksense.jpg';
 
 const keys = {
-    ArrowLeft: false, ArrowRight: false, ArrowUp: false, ArrowDown: false, Space: false, Enter: false
+    ArrowLeft: false,
+    ArrowRight: false,
+    ArrowUp: false,
+    ArrowDown: false,
+    Space: false,
+    Enter: false
 };
 
 const MAINNET_LETTERS = ['M', 'A', 'I', 'N', 'N', 'E', 'T'];
@@ -162,7 +171,11 @@ function randomEnemy() {
     const r = Math.random();
     if (r < 0.7) {
         return {
-            type: 'pharos', x: Math.random() * (GAME_WIDTH - 40), y: Math.random() * -600 - 40, width: 48, height: 48
+            type: 'pharos',
+            x: Math.random() * (GAME_WIDTH - 40),
+            y: Math.random() * -600 - 40,
+            width: 48,
+            height: 48
         };
     } else {
         return {
@@ -215,6 +228,28 @@ restartButton.addEventListener('click', () => {
     resetGame();
 });
 
+// Logo ekranındaki cüzdan bağlama butonu
+connectWalletBtnLogo.addEventListener('click', async () => {
+    playSound('buttonClick'); // Buton tıklama sesi
+    connectWalletBtnLogo.disabled = true;
+    walletStatusLogo.textContent = 'Connecting...';
+    const res = await connectToWeb3Interactive();
+    if (res.success) {
+        walletConnected = true;
+        walletStatusLogo.textContent = `Connected: ${res.account.substring(0,10)}...${res.account.slice(-6)}`;
+        // Logo ekranını gizle, oyun ekranını göster
+        logoScreen.classList.add('hidden');
+        startScreen.classList.remove('hidden');
+        startButton.disabled = false;
+        await loadAndRenderLeaderboard();
+    } else {
+        walletConnected = false;
+        walletStatusLogo.textContent = `Error: ${res.error}`;
+        connectWalletBtnLogo.disabled = false;
+    }
+});
+
+// Oyun ekranındaki cüzdan bağlama butonu (halihazırda var)
 connectWalletBtn.addEventListener('click', async () => {
     playSound('buttonClick'); // Buton tıklama sesi
     connectWalletBtn.disabled = true;
@@ -222,7 +257,7 @@ connectWalletBtn.addEventListener('click', async () => {
     const res = await connectToWeb3Interactive();
     if (res.success) {
         walletConnected = true;
-        walletStatus.textContent = `Connected: ${res.account.substring(0, 10)}...${res.account.slice(-6)}`;
+        walletStatus.textContent = `Connected: ${res.account.substring(0,10)}...${res.account.slice(-6)}`;
         startButton.disabled = false;
         connectWalletBtn.textContent = 'Connected';
         connectWalletBtn.disabled = true;
@@ -312,12 +347,8 @@ function movePlayer() {
     if (keys.ArrowRight) player.x += player.speed;
     if (keys.ArrowUp) player.y -= player.speed;
     if (keys.ArrowDown) player.y += player.speed;
-
-    // ================== DEĞİŞİKLİK BURADA ==================
-    // player'ın canvas sınırları içinde kalması sağlandı
     player.x = Math.max(0, Math.min(GAME_WIDTH - player.width, player.x));
     player.y = Math.max(0, Math.min(GAME_HEIGHT - player.height, player.y));
-    // ======================================================
 }
 
 function fireBullet() {
@@ -500,11 +531,8 @@ function resetGame() {
     shootInterval = 300;
     pharosBonus.classList.add('hidden');
     blocksenseBonus.classList.add('hidden');
-    // ================== DEĞİŞİKLİK BURADA ==================
-    // player'ın başlangıç konumu sıfırlandı
-    player.x = 0; // GAME_WIDTH / 2 - 32 idi
-    player.y = 0; // GAME_HEIGHT - 100 idi
-    // ======================================================
+    player.x = GAME_WIDTH / 2 - 32;
+    player.y = GAME_HEIGHT - 100;
     spawnInitialEnemies();
     bullets = [];
     bonusMessage.textContent = '';
@@ -587,7 +615,7 @@ function renderLeaderboard(rows) {
         const tdRank = document.createElement('td');
         tdRank.textContent = idx + 1;
         const tdPlayer = document.createElement('td');
-        tdPlayer.textContent = `${entry.player.substring(0, 6)}...${entry.player.slice(-4)}`;
+        tdPlayer.textContent = `${entry.player.substring(0,6)}...${entry.player.slice(-4)}`;
         const tdScore = document.createElement('td');
         tdScore.textContent = entry.score;
         tr.appendChild(tdRank);
@@ -598,75 +626,195 @@ function renderLeaderboard(rows) {
 }
 
 function applyEnhancedStyles() {
-    const buttonStyle = ` background: linear-gradient(to bottom, #555, #333, #555); border: 2px solid #222; border-radius: 10px; color: #FFD700; font-weight: bold; padding: 10px 16px; cursor: pointer; text-shadow: 1px 1px 2px black; box-shadow: inset 0 1px 0 rgba(255,255,255,0.3), 0 3px 5px rgba(0,0,0,0.5); transition: all 0.2s ease; position: relative; overflow: hidden; `;
-    const buttonHoverStyle = ` background: linear-gradient(to bottom, #666, #444, #666); color: #FFEC8B; text-shadow: 1px 1px 3px black; box-shadow: inset 0 1px 0 rgba(255,255,255,0.4), 0 4px 6px rgba(0,0,0,0.6); transform: translateY(-2px); `;
-    const buttonActiveStyle = ` transform: translateY(1px); box-shadow: inset 0 1px 0 rgba(0,0,0,0.2), 0 1px 2px rgba(0,0,0,0.3); `;
-    const panelStyle = ` background: linear-gradient(to bottom, #444, #222, #444); border: 3px solid #1a1a1a; border-radius: 15px; padding: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.7); position: relative; `;
+    const buttonStyle = `
+        background: linear-gradient(to bottom, #555, #333, #555);
+        border: 2px solid #222;
+        border-radius: 10px;
+        color: #FFD700;
+        font-weight: bold;
+        padding: 10px 16px;
+        cursor: pointer;
+        text-shadow: 1px 1px 2px black;
+        box-shadow: inset 0 1px 0 rgba(255,255,255,0.3), 0 3px 5px rgba(0,0,0,0.5);
+        transition: all 0.2s ease;
+        position: relative;
+        overflow: hidden;
+    `;
+    const buttonHoverStyle = `
+        background: linear-gradient(to bottom, #666, #444, #666);
+        color: #FFEC8B;
+        text-shadow: 1px 1px 3px black;
+        box-shadow: inset 0 1px 0 rgba(255,255,255,0.4), 0 4px 6px rgba(0,0,0,0.6);
+        transform: translateY(-2px);
+    `;
+    const buttonActiveStyle = `
+        transform: translateY(1px);
+        box-shadow: inset 0 1px 0 rgba(0,0,0,0.2), 0 1px 2px rgba(0,0,0,0.3);
+    `;
+    const panelStyle = `
+        background: linear-gradient(to bottom, #444, #222, #444);
+        border: 3px solid #1a1a1a;
+        border-radius: 15px;
+        padding: 15px;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.7);
+        position: relative;
+    `;
+
     const buttons = [
-        startButton, restartButton, connectWalletBtn, tweetScoreBtn, verifyTweetBtn, pharosFollowBtn, blocksenseFollowBtn
+        startButton, restartButton, connectWalletBtn, tweetScoreBtn, verifyTweetBtn,
+        pharosFollowBtn, blocksenseFollowBtn, connectWalletBtnLogo
     ];
     buttons.forEach(button => {
         if (button) {
             button.style.cssText += buttonStyle;
-            button.addEventListener('mouseenter', function () {
+            button.addEventListener('mouseenter', function() {
                 this.style.cssText += buttonHoverStyle;
             });
-            button.addEventListener('mouseleave', function () {
+            button.addEventListener('mouseleave', function() {
                 this.style.cssText = this.style.cssText.replace(/background: linear-gradient\(to bottom, #666, #444, #666\)[^;]*;?|color: #FFEC8B[^;]*;?|text-shadow: 1px 1px 3px black[^;]*;?|box-shadow: inset 0 1px 0 rgba\(255,255,255,0\.4\), 0 4px 6px rgba\(0,0,0,0\.6\)[^;]*;?|transform: translateY\(-2px\)[^;]*;?/g, '');
                 this.style.cssText += buttonStyle;
             });
-            button.addEventListener('mousedown', function () {
+            button.addEventListener('mousedown', function() {
                 this.style.cssText += buttonActiveStyle;
             });
-            button.addEventListener('mouseup', function () {
+            button.addEventListener('mouseup', function() {
                 this.style.cssText = this.style.cssText.replace(/transform: translateY\(1px\)[^;]*;?|box-shadow: inset 0 1px 0 rgba\(0,0,0,0\.2\), 0 1px 2px rgba\(0,0,0,0\.3\)[^;]*;?/g, '');
             });
         }
     });
+
     if (startScreen) {
         startScreen.style.cssText += panelStyle;
         startScreen.style.position = 'relative';
         const innerBorder = document.createElement('div');
-        innerBorder.style.cssText = ` position: absolute; top: 3px; left: 3px; right: 3px; bottom: 3px; border: 1px solid rgba(255,255,255,0.2); border-radius: 10px; pointer-events: none; `;
+        innerBorder.style.cssText = `
+            position: absolute;
+            top: 3px;
+            left: 3px;
+            right: 3px;
+            bottom: 3px;
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 10px;
+            pointer-events: none;
+        `;
         startScreen.appendChild(innerBorder);
     }
+
     if (gameOverScreen) {
         gameOverScreen.style.cssText += panelStyle;
         gameOverScreen.style.position = 'relative';
         const innerBorder = document.createElement('div');
-        innerBorder.style.cssText = ` position: absolute; top: 3px; left: 3px; right: 3px; bottom: 3px; border: 1px solid rgba(255,255,255,0.2); border-radius: 10px; pointer-events: none; `;
+        innerBorder.style.cssText = `
+            position: absolute;
+            top: 3px;
+            left: 3px;
+            right: 3px;
+            bottom: 3px;
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 10px;
+            pointer-events: none;
+        `;
         gameOverScreen.appendChild(innerBorder);
     }
+
+    if (logoScreen) {
+        logoScreen.style.cssText += panelStyle;
+        logoScreen.style.position = 'relative';
+        logoScreen.style.textAlign = 'center';
+        logoScreen.style.padding = '40px 20px';
+        const innerBorder = document.createElement('div');
+        innerBorder.style.cssText = `
+            position: absolute;
+            top: 3px;
+            left: 3px;
+            right: 3px;
+            bottom: 3px;
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 10px;
+            pointer-events: none;
+        `;
+        logoScreen.appendChild(innerBorder);
+    }
+
     if (bonusMessage) {
         bonusMessage.style.color = '#FFD700';
         bonusMessage.style.fontWeight = 'bold';
         bonusMessage.style.textShadow = '1px 1px 2px black';
     }
+
     if (pharosBonus) {
-        pharosBonus.style.cssText += ` background: linear-gradient(to bottom, #1E3A8A, #1E40AF, #1E3A8A); border: 2px solid #000; border-radius: 10px; box-shadow: 0 3px 8px rgba(0,0,0,0.5); `;
+        pharosBonus.style.cssText += `
+            background: linear-gradient(to bottom, #1E3A8A, #1E40AF, #1E3A8A);
+            border: 2px solid #000;
+            border-radius: 10px;
+            box-shadow: 0 3px 8px rgba(0,0,0,0.5);
+        `;
     }
+
     if (blocksenseBonus) {
-        blocksenseBonus.style.cssText += ` background: linear-gradient(to bottom, #1E3A8A, #1E40AF, #1E3A8A); border: 2px solid #000; border-radius: 10px; box-shadow: 0 3px 8px rgba(0,0,0,0.5); `;
+        blocksenseBonus.style.cssText += `
+            background: linear-gradient(to bottom, #1E3A8A, #1E40AF, #1E3A8A);
+            border: 2px solid #000;
+            border-radius: 10px;
+            box-shadow: 0 3px 8px rgba(0,0,0,0.5);
+        `;
     }
+
     if (scoreDisplay) {
-        scoreDisplay.style.cssText += ` background: linear-gradient(to bottom, #000, #333, #000); border: 2px solid #222; border-radius: 8px; padding: 6px 12px; font-weight: bold; color: #00ff00; text-shadow: 0 0 5px #00ff00; `;
+        scoreDisplay.style.cssText += `
+            background: linear-gradient(to bottom, #000, #333, #000);
+            border: 2px solid #222;
+            border-radius: 8px;
+            padding: 6px 12px;
+            font-weight: bold;
+            color: #00ff00;
+            text-shadow: 0 0 5px #00ff00;
+        `;
     }
+
     const leaderboardSection = document.querySelector('#leaderboardSidebar') || document.querySelector('#gameOverScreen').parentElement;
     if (leaderboardSection) {
         if (!leaderboardSection.dataset.styled) {
-            leaderboardSection.style.cssText += ` background: linear-gradient(to bottom, #444, #222, #444); border: 3px solid #111; border-radius: 12px; padding: 15px; box-shadow: inset 0 0 10px rgba(0,0,0,0.8), 0 5px 15px rgba(0,0,0,0.7); `;
+            leaderboardSection.style.cssText += `
+                background: linear-gradient(to bottom, #444, #222, #444);
+                border: 3px solid #111;
+                border-radius: 12px;
+                padding: 15px;
+                box-shadow: inset 0 0 10px rgba(0,0,0,0.8), 0 5px 15px rgba(0,0,0,0.7);
+            `;
             leaderboardSection.dataset.styled = "true";
         }
     }
+
     if (blockchainStatus) {
         const style = document.createElement('style');
-        style.textContent = ` .info { color: #a8c1ff !important; font-weight: bold; } .success { color: #57e389 !important; font-weight: bold; text-shadow: 0 0 5px #57e389; } .error { color: #ff6b6b !important; font-weight: bold; text-shadow: 0 0 5px #ff0000; } `;
+        style.textContent = `
+            .info { color: #a8c1ff !important; font-weight: bold; }
+            .success { color: #57e389 !important; font-weight: bold; text-shadow: 0 0 5px #57e389; }
+            .error { color: #ff6b6b !important; font-weight: bold; text-shadow: 0 0 5px #ff0000; }
+        `;
         document.head.appendChild(style);
     }
+
     const gameHeader = document.getElementById('gameHeader');
     const gameTitle = gameHeader ? gameHeader.querySelector('h1') : null;
     if (gameTitle) {
-        gameTitle.style.cssText += ` background: linear-gradient(to bottom, #c0c0c0, #808080, #c0c0c0); background: linear-gradient(to bottom, #ffd700, #daa520, #ffd700); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; text-fill-color: transparent; font-weight: bold; text-shadow: 2px 2px 4px rgba(0,0,0,0.5); letter-spacing: 1px; margin: 0; padding: 5px 10px; border: 2px solid #b8860b; border-radius: 10px; display: inline-block; `;
+        gameTitle.style.cssText += `
+            background: linear-gradient(to bottom, #c0c0c0, #808080, #c0c0c0);
+            background: linear-gradient(to bottom, #ffd700, #daa520, #ffd700);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-fill-color: transparent;
+            font-weight: bold;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+            letter-spacing: 1px;
+            margin: 0;
+            padding: 5px 10px;
+            border: 2px solid #b8860b;
+            border-radius: 10px;
+            display: inline-block;
+        `;
     }
 }
 
