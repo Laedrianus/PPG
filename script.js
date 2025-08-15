@@ -197,6 +197,7 @@ connectWalletBtn.addEventListener('click', async () => {
     connectWalletBtn.textContent = 'Connected';
     connectWalletBtn.disabled = true;
     
+    // Splash screen'i gizle
     const splash = document.getElementById('splashScreen');
     if (splash) {
         splash.classList.add('hidden');
