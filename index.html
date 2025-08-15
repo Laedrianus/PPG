@@ -6,7 +6,7 @@
   <title>Pirate Parrot Game</title>
   <link rel="stylesheet" href="style.css" />
   <!-- Ethers (mevcut projende kullanıyorsun) -->
-  <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.min.js  "></script>
 </head>
 <body>
   <div id="gameContainer">
@@ -28,6 +28,11 @@
 
     <div id="mainContent">
       <div id="gameArea">
+        <!-- Splash Screen - Başlangıçta görünür, cüzdan bağlandığında kaybolur -->
+        <div id="splashScreen" class="hidden">
+          <img src="assets/logo.png" alt="Pirate Parrot Game" style="max-width: 80%; max-height: 80%;">
+        </div>
+
         <canvas id="gameCanvas" width="800" height="600"></canvas>
 
         <div id="gameControls">
@@ -87,7 +92,7 @@
   </div>
 
   <!-- Web3.js (mevcut entegrasyonla uyumlu) -->
-  <script src="https://cdn.jsdelivr.net/npm/web3@1.8.2/dist/web3.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/web3@1.8.2/dist/web3.min.js  "></script>
 
   <!-- On-chain entegrasyon -->
   <script src="web3-integration.js"></script>
@@ -95,4 +100,4 @@
   <!-- Oyun ana kodu -->
   <script src="script.js"></script>
 </body>
-</html>"<!-- trigger redeploy -->" 
+</html>
